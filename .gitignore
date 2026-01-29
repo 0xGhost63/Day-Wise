@@ -2,3 +2,5 @@
 .env
 todo.txt
 test.py
+__pycache__/
+instance/*.db
