@@ -26,12 +26,28 @@
     margin-bottom: 15px;
   }
 
-  .hero-section .quote {
+  .hero-section .quote-container {
+    margin-bottom: 30px;
+    min-height: 80px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .hero-section .quote-text {
     font-style: italic;
     color: #78350f;
-    margin-bottom: 30px;
-    font-size: 1.1rem;
-    min-height: 60px;
+    font-size: 1.25rem;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+
+  .hero-section .quote-author {
+    color: #92400e;
+    font-size: 1rem;
+    font-weight: 400;
+    opacity: 0.9;
   }
 
   .write-btn {
@@ -80,22 +96,32 @@
   }
 
   @media (max-width: 768px) {
-    .hero-section h1 {
-      font-size: 2rem;
-    }
-
-    .stats-card h3 {
-      font-size: 2rem;
-    }
+    .hero-section h1 { font-size: 2rem; }
+    .stats-card h3 { font-size: 2rem; }
   }
 </style>
 
-<!-- Hero Section with Write Button -->
 <div class="hero-section">
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+      {% for category, message in messages %}
+        <div class="alert alert-{{ category if category != 'message' else 'info' }}" 
+             style="padding: 15px; margin-bottom: 20px; border-radius: 10px; background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a;">
+          {{ message }}
+        </div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
   <h1>Welcome Back, {{ username }}!</h1>
   <p class="date">{{ current_date }}</p>
-  <p class="quote" id="daily-quote">Loading quote...</p>
-  <button class="btn btn-primary write-btn" onclick="window.location.href='/compose'">
+  
+  <div class="quote-container">
+    <p class="quote-text">"{{ quote }}"</p>
+    <p class="quote-author">— {{ author }}</p>
+  </div>
+
+  <button class="btn btn-primary write-btn" onclick="window.location.href='{{ url_for('compose') }}'">
     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-pencil-square me-2" viewBox="0 0 16 16" style="vertical-align: middle;">
       <path d="M15.502 1.94a.5.5 0 0 1 0 .706L14.459 3.69l-2-2L13.502.646a.5.5 0 0 1 .707 0l1.293 1.293zm-1.75 2.456-2-2L4.939 9.21a.5.5 0 0 0-.121.196l-.805 2.414a.25.25 0 0 0 .316.316l2.414-.805a.5.5 0 0 0 .196-.12l6.813-6.814z"/>
       <path fill-rule="evenodd" d="M1 13.5A1.5 1.5 0 0 0 2.5 15h11a1.5 1.5 0 0 0 1.5-1.5v-6a.5.5 0 0 0-1 0v6a.5.5 0 0 1-.5.5h-11a.5.5 0 0 1-.5-.5v-11a.5.5 0 0 1 .5-.5H9a.5.5 0 0 0 0-1H2.5A1.5 1.5 0 0 0 1 2.5z"/>
@@ -104,7 +130,6 @@
   </button>
 </div>
 
-<!-- Stats Cards -->
 <div class="row mb-4">
   <div class="col-md-4">
     <div class="stats-card">
@@ -137,17 +162,4 @@
     </div>
   </div>
 </div>
-
-<script>
-  // Fetch random quote from API on page load
-  fetch('https://api.quotable.io/random')
-    .then(response => response.json())
-    .then(data => {
-      document.getElementById('daily-quote').textContent = `"${data.content}" - ${data.author}`;
-    })
-    .catch(error => {
-      // Fallback quote if API fails
-      document.getElementById('daily-quote').textContent = '"The journey of a thousand miles begins with a single step." - Lao Tzu';
-    });
-</script>
 {% endblock %}

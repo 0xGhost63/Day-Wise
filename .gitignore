@@ -1,6 +1,11 @@
 .venv/
 .env
+__pycache__/
+*.pyc
+*.pyo
+instance/
+.vscode/
+.idea/
+.DS_Store
 todo.txt
 test.py
-__pycache__/
-instance/*.db

@@ -1,9 +1,12 @@
+import json
+import random
 from flask import Flask,render_template,url_for,redirect,request,flash,session
 from dotenv import load_dotenv
 import os
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_bcrypt import Bcrypt
+from datetime import datetime
 
 app=Flask(__name__)
 
@@ -17,7 +20,10 @@ app.config["SQLALCHEMY_TRACK_MODIFICATIONS"] = False
 db=SQLAlchemy(app)
 bcrypt = Bcrypt(app)
 
-
+## loading the quotes from the json file into a list
+with open('quotes.json',"r",encoding="utf-8") as f:
+    quotes=json.load(f)
+    
 class User(db.Model):
 
     __tablename__="users"
@@ -122,16 +128,82 @@ def register():
 @app.route('/home',methods=["GET"])
 def home():
 
+
+    #quote
+    quote_obj=random.choice(quotes)
+    quote=quote_obj['quote']
+    author=quote_obj['author']
+
     user_id=session.get('user_id')
     user=User.query.get(user_id)
+    if not user:
+        session.clear()
+        return redirect(url_for('login'))
+    
+
+
 
     username=user.username
     entries=user.diaries
+    
+    # total entries
     leng = len(entries)
 
+    #this month entries
+    now=datetime.now()
+    this_month=now.month
 
-    return render_template('home.html',username=username)
+    listt=Diary.query.filter_by(user_id=user.id).order_by(Diary.diary_time).all()
+    diary_times=[d.diary_time for d in listt]
+     
+    ## it returns data lik this ::
+    # 2026-01-29 21:01:00
+    # 2026-01-29 21:11:00
 
+    ## and month returns like : 
+    # 1
+
+    this_month_counter=0
+
+    for time in diary_times:
+        if time.month==this_month:
+            this_month_counter=this_month_counter+1
+
+    
+
+
+
+    return render_template('home.html',username=username,quote=quote,author=author,total_entries=leng,this_month=this_month_counter)
+
+
+@app.route('/compose',methods=['GET','POST'])
+def compose():
+    now=datetime.now().strftime('%d %m %Y')
+    if request.method=="POST":
+        title=request.form.get('title')
+        data=request.form.get('content')
+        user_id=session.get('user_id')
+
+        if not user_id:
+            return redirect(url_for('login'))
+        
+        else:
+            entry=Diary(title=title,user_id=user_id,content=data)
+            db.session.add(entry)
+            db.session.commit()
+            flash("Sumbitted! :)")
+            return redirect(url_for('home'))
+    
+    return render_template('compose.html',current_date=now)
+
+
+## add the journals method here !
+
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
 
 if __name__=="__main__":
     print("Hello World")
