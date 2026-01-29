@@ -6,7 +6,7 @@ import os
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_bcrypt import Bcrypt
-from datetime import datetime
+from datetime import datetime,timedelta
 
 app=Flask(__name__)
 
@@ -58,12 +58,16 @@ class Diary(db.Model):
     title=db.Column(db.String(100),nullable=False)
     diary_time=db.Column(db.DateTime  , default=lambda: datetime.now().replace(second=0, microsecond=0))
     content=db.Column(db.Text,nullable=False)
+    edited = db.Column(db.Boolean, default=False)  
+
     
 
     def __init__(self,title,content,user_id):
         self.title=title
         self.content=content
         self.user_id=user_id
+        self.edited = False
+
 
 
 @app.route('/',methods=['POST','GET'])
@@ -169,11 +173,27 @@ def home():
         if time.month==this_month:
             this_month_counter=this_month_counter+1
 
-    
+
+    ##Calculating the Streak ...
+    streak_counter = 0
+    today = datetime.now().date()
+
+    listt = Diary.query.filter_by(user_id=user.id).order_by(Diary.diary_time.desc()).all()
+
+    # taking only the dates
+    diary_dates = list({ d.diary_time.date() for d in listt })
 
 
+    current_day = today
 
-    return render_template('home.html',username=username,quote=quote,author=author,total_entries=leng,this_month=this_month_counter)
+    for date in diary_dates:
+        if date==current_day:
+            streak_counter+= 1
+            current_day =current_day-timedelta(days=1)
+
+    current_date=datetime.now().strftime('%Y %m %d')
+
+    return render_template('home.html',current_date=current_date,username=username,quote=quote,author=author,total_entries=leng,this_month=this_month_counter,streak_days=streak_counter)
 
 
 @app.route('/compose',methods=['GET','POST'])
@@ -197,13 +217,72 @@ def compose():
     return render_template('compose.html',current_date=now)
 
 
-## add the journals method here !
+@app.route('/journal')
+def journal():
+
+    user_id = session.get('user_id')
+    if not user_id:
+        return redirect(url_for('login'))
+
+    user = User.query.get(user_id)
+    if not user:
+        session.clear()
+        return redirect(url_for('login'))
+
+    entries = user.diaries
+    total_entries = len(entries)
+
+    return render_template('journal.html',total_entries=total_entries,entries=entries)
+
+@app.route('/view-entry/<int:entry_id>')
+def view_entry(entry_id):
+    entry = Diary.query.get_or_404(entry_id)
+    # Check if entry belongs to current user
+    if entry.user_id != session.get('user_id'):
+        return redirect(url_for('home'))
+    
+    return render_template('view_entry.html', entry=entry)
+
+
+@app.route('/delete-entry/<int:entry_id>', methods=['POST'])
+def delete_entry(entry_id):
+    entry = Diary.query.get_or_404(entry_id)
+    # Security check
+    if entry.user_id != session.get('user_id'):
+        return redirect(url_for('home'))
+    db.session.delete(entry)
+    db.session.commit()
+    return redirect(url_for('journal'))
+
+@app.route('/edit-entry/<int:entry_id>', methods=['GET','POST'])
+def edit_entry(entry_id):
+    entry = Diary.query.get_or_404(entry_id)
+    current_date=datetime.now().strftime("%Y %m %d")
+
+    if entry.user_id != session.get('user_id'):
+        return redirect(url_for('home'))
+
+    if request.method == 'POST':
+        entry.title = request.form.get('title')
+        entry.content = request.form.get('content')
+        entry.edited = True               # flag as edited
+        entry.diary_time = datetime.now() # optional: update timestamp
+        db.session.commit()
+        flash("Diary updated!")
+        return redirect(url_for('view_entry', entry_id=entry.id))
+
+    return render_template('edit_entry.html', entry=entry,current_date=current_date)
+
+
+
 
 
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
+
+
 
 if __name__=="__main__":
     print("Hello World")
