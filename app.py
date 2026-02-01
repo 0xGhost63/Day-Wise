@@ -254,6 +254,7 @@ def delete_entry(entry_id):
     db.session.commit()
     return redirect(url_for('journal'))
 
+
 @app.route('/edit-entry/<int:entry_id>', methods=['GET','POST'])
 def edit_entry(entry_id):
     entry = Diary.query.get_or_404(entry_id)
