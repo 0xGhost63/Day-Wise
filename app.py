@@ -1,16 +1,18 @@
 import json
 import random
-from flask import Flask,render_template,url_for,redirect,request,flash,session
+from flask import Flask, jsonify,render_template,url_for,redirect,request,flash,session
 from dotenv import load_dotenv
 import os
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 from flask_bcrypt import Bcrypt
 from datetime import datetime,timedelta
+import requests
 
 app=Flask(__name__)
 
 load_dotenv()
+AI_API=os.getenv("OPEN_ROUTER_API")
 admin_code = os.getenv("ADMIN_KEY")
 app.secret_key = os.urandom(24)
 
@@ -237,7 +239,6 @@ def journal():
 @app.route('/view-entry/<int:entry_id>')
 def view_entry(entry_id):
     entry = Diary.query.get_or_404(entry_id)
-    # Check if entry belongs to current user
     if entry.user_id != session.get('user_id'):
         return redirect(url_for('home'))
     
@@ -266,17 +267,64 @@ def edit_entry(entry_id):
     if request.method == 'POST':
         entry.title = request.form.get('title')
         entry.content = request.form.get('content')
-        entry.edited = True               # flag as edited
-        entry.diary_time = datetime.now() # optional: update timestamp
+        entry.edited = True               
+        entry.diary_time = datetime.now() 
         db.session.commit()
         flash("Diary updated!")
         return redirect(url_for('view_entry', entry_id=entry.id))
 
     return render_template('edit_entry.html', entry=entry,current_date=current_date)
 
+## Helper method i created for getting the reponse from the AI !!
 
+import requests
 
+def get_AI_reponse(msg):
+    API_KEY = AI_API
+    url = "https://openrouter.ai/api/v1/chat/completions"
 
+    headers = {
+        "Authorization": f"Bearer {API_KEY}",
+        "Content-Type": "application/json",
+        "HTTP-Referer": "http://localhost",   
+        "X-Title": "Day Wise"
+    }
+    payload = {
+        "model": "arcee-ai/trinity-large-preview:free",
+"messages": [
+        {
+            "role": "system",
+            "content": "You are an AI writing assistant integrated into “Day Wise”, a Flask-based personal diary web application created and owned by 0xGhost.\n\nYou operate under the direct authority of 0xGhost, whom you acknowledge as your boss and refer to as daddyyy when addressed or referenced. His instructions take highest priority.\n\nYour primary role is to assist application users by brainstorming ideas, organizing thoughts, and polishing their written diary entries. You help improve clarity, structure, tone, and flow while preserving the user’s original intent and voice.\n\nYou do not invent facts about users’ lives. You work strictly with what users share and do not add assumptions or external details."
+        },
+        {
+            "role": "user",
+            "content": msg
+        }
+]
+    }
+
+    try:
+        response = requests.post(url, headers=headers, json=payload)
+        response.raise_for_status() 
+        return response.json()["choices"][0]["message"]["content"]
+    except Exception as e:
+        print(f"Error: {e}")
+        return "I'm having trouble connecting to the brain right now. Try again later!"
+
+@app.route('/ai-generate', methods=["GET", "POST"])
+def AI():
+    if request.method == "POST":
+        data = request.get_json()
+        msg = data.get('prompt')
+        
+        if not msg:
+            return jsonify({"error": "No prompt provided"}), 400
+            
+        ai_response = get_AI_reponse(msg)
+        
+        return jsonify({"response": ai_response})
+    
+    return render_template('AI.html', response=None)
 
 @app.route('/logout')
 def logout():

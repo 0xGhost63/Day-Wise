@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+
+{% block title %}AI Assistant{% endblock %}
+
+{% block content %}
+<style>
+  .ai-container {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+
+  .ai-card {
+    background: rgba(255, 248, 240, 0.95);
+    border-radius: 15px;
+    padding: 40px;
+    border: 1px solid rgba(255, 200, 150, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+  }
+
+  /* Note Box Styling */
+  .ai-note-box {
+    background: #fffbeb;
+    border-left: 4px solid #f59e0b;
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 25px;
+    color: #92400e;
+    font-size: 0.95rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    line-height: 1.5;
+  }
+
+  .ai-header {
+    text-align: center;
+    margin-bottom: 35px;
+  }
+
+  .ai-header h1 {
+    color: #d97706;
+    font-size: 2.2rem;
+    font-weight: 600;
+    margin-bottom: 10px;
+  }
+
+  .ai-header p {
+    color: #92400e;
+    font-size: 1rem;
+  }
+
+  .form-label {
+    color: #92400e;
+    font-weight: 600;
+    font-size: 1.1rem;
+    margin-bottom: 12px;
+    display: block;
+  }
+
+  .ai-textarea {
+    width: 100%;
+    min-height: 150px;
+    padding: 18px 20px;
+    font-size: 1.05rem;
+    line-height: 1.7;
+    border: 2px solid rgba(251, 191, 36, 0.4);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.9);
+    color: #78350f;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    resize: vertical;
+    transition: all 0.3s;
+    margin-bottom: 20px;
+  }
+
+  .ai-textarea:focus {
+    outline: none;
+    border-color: #f97316;
+    box-shadow: 0 0 0 4px rgba(249, 115, 22, 0.1);
+    background: #ffffff;
+  }
+
+  /* Button Group Layout */
+  .button-group {
+    display: flex;
+    gap: 15px;
+  }
+
+  .generate-btn {
+    flex: 2;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background: linear-gradient(135deg, #f97316 0%, #ea580c 100%);
+    border: none;
+    border-radius: 50px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(249, 115, 22, 0.4);
+    transition: all 0.3s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .clear-btn {
+    flex: 1;
+    padding: 15px;
+    font-size: 1.1rem;
+    font-weight: 600;
+    background: #fef3c7;
+    border: 2px solid #fcd34d;
+    border-radius: 50px;
+    color: #92400e;
+    transition: all 0.3s;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .generate-btn:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(249, 115, 22, 0.6); }
+  .clear-btn:hover { background: #fde68a; border-color: #f59e0b; }
+  .generate-btn:disabled { opacity: 0.6; cursor: not-allowed; transform: none; }
+
+  .response-section {
+    margin-top: 30px;
+    padding-top: 30px;
+    border-top: 2px solid rgba(251, 191, 36, 0.3);
+  }
+
+  .response-box {
+    background: rgba(255, 255, 255, 0.9);
+    border: 2px solid rgba(251, 191, 36, 0.4);
+    border-radius: 12px;
+    padding: 25px;
+    min-height: 150px;
+    color: #78350f;
+    font-size: 1.05rem;
+    line-height: 1.8;
+    font-family: 'Georgia', 'Times New Roman', serif;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+  }
+
+  .loading { text-align: center; color: #92400e; font-style: italic; padding: 40px; }
+  .loading-spinner {
+    display: inline-block; width: 40px; height: 40px;
+    border: 4px solid rgba(249, 115, 22, 0.2);
+    border-top-color: #f97316; border-radius: 50%;
+    animation: spin 1s linear infinite; margin-bottom: 15px;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  @media (max-width: 768px) {
+    .ai-card { padding: 25px 20px; }
+    .button-group { flex-direction: column; }
+  }
+</style>
+
+<div class="ai-container">
+  <div class="ai-card">
+    <div class="ai-header">
+      <h1>
+        AI Writing Assistant
+      </h1>
+      <p>Ask anything to help with your diary writing journey</p>
+    </div>
+
+    <div class="ai-note-box">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-info-circle" viewBox="0 0 16 16" style="flex-shrink: 0; margin-top: 2px;">
+        <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+        <path d="m8.93 6.588-2.29.287-.082.38.45.083c.294.07.352.176.288.469l-.738 3.468c-.194.897.105 1.319.808 1.319.545 0 1.178-.252 1.465-.598l.088-.416c-.2.176-.492.246-.686.246-.275 0-.375-.193-.304-.533L8.93 6.588zM9 4.5a1 1 0 1 1-2 0 1 1 0 0 1 2 0z"/>
+      </svg>
+      <div>
+        <strong>Note : </strong> It can only see and respond to one message at a time (holds no memory) great for polishing your writing,terrible for your calculus homework...
+      </div>
+    </div>
+
+    <form id="ai-form" onsubmit="generateAI(event)">
+      <div class="mb-4">
+        <label for="user-prompt" class="form-label">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-chat-dots me-2" viewBox="0 0 16 16" style="vertical-align: middle;">
+            <path d="M5 8a1 1 0 1 1-2 0 1 1 0 0 1 2 0m4 0a1 1 0 1 1-2 0 1 1 0 0 1 2 0m3 1a1 1 0 1 0 0-2 1 1 0 0 0 0 2"/>
+            <path d="m2.165 15.803.02-.004c1.83-.363 2.948-.842 3.468-1.105A9 9 0 0 0 8 15c4.418 0 8-3.134 8-7s-3.582-7-8-7-8 3.134-8 7c0 1.76.743 3.37 1.97 4.6a10.4 10.4 0 0 1-.524 2.318l-.003.011a11 11 0 0 1-.244.637c-.079.186.074.394.273.362a22 22 0 0 0 .693-.125m.8-3.108a1 1 0 0 0-.287-.801C1.618 10.83 1 9.468 1 8c0-3.192 3.004-6 7-6s7 2.808 7 6-3.004 6-7 6a8 8 0 0 1-2.088-.272 1 1 0 0 0-.711.074c-.387.196-1.24.57-2.634.893a11 11 0 0 0 .398-2"/>
+          </svg>
+          Your Prompt
+        </label>
+        <textarea 
+          class="ai-textarea" 
+          id="user-prompt" 
+          name="prompt" 
+          placeholder="e.g., Help me write about my day..."
+          required
+        ></textarea>
+      </div>
+
+      <div class="button-group">
+        <button type="button" class="clear-btn" onclick="clearPrompt()">
+          <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" fill="currentColor" viewBox="0 0 16 16">
+            <path d="M8 15A7 7 0 1 1 8 1a7 7 0 0 1 0 14zm0 1A8 8 0 1 0 8 0a8 8 0 0 0 0 16z"/>
+            <path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/>
+          </svg>
+          Clear
+        </button>
+
+        <button type="submit" class="generate-btn" id="generate-btn">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-send" viewBox="0 0 16 16">
+            <path d="M15.854.146a.5.5 0 0 1 .11.54l-5.819 14.547a.75.75 0 0 1-1.329.124l-3.178-4.995L.643 7.184a.75.75 0 0 1 .124-1.33L15.314.037a.5.5 0 0 1 .54.11ZM6.636 10.07l2.761 4.338L14.13 2.576zm6.787-8.201L1.591 6.602l4.339 2.76z"/>
+          </svg>
+          Generate with AI
+        </button>
+      </div>
+    </form>
+
+    <div class="response-section" id="response-section" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+        <label class="form-label" style="margin-bottom: 0;">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-robot me-2" viewBox="0 0 16 16" style="vertical-align: middle;">
+            <path d="M6 12.5a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5M3 8.062C3 6.76 4.235 5.765 5.53 5.886a26.6 26.6 0 0 0 4.94 0C11.765 5.765 13 6.76 13 8.062v1.157a.93.93 0 0 1-.765.935c-.845.147-2.34.346-4.235.346s-3.39-.2-4.235-.346A.93.93 0 0 1 3 9.219zm4.542-.827a.25.25 0 0 0-.217.068l-.92.9a25 25 0 0 1-1.871-.183.25.25 0 0 0-.068.495c.55.076 1.232.149 2.02.193a.25.25 0 0 0 .189-.071l.754-.736.847 1.71a.25.25 0 0 0 .404.062l.932-.97a25 25 0 0 0 1.922-.188.25.25 0 0 0-.068-.495c-.538.074-1.207.145-1.98.189a.25.25 0 0 0-.166.076l-.754.785-.842-1.7a.25.25 0 0 0-.182-.135"/>
+            <path d="M8.5 1.866a1 1 0 1 0-1 0V3h-2A4.5 4.5 0 0 0 1 7.5V8a1 1 0 0 0-1 1v2a1 1 0 0 0 1 1v1a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-1a1 1 0 0 0 1-1V9a1 1 0 0 0-1-1v-.5A4.5 4.5 0 0 0 10.5 3h-2zM14 7.5V13a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V7.5A3.5 3.5 0 0 1 5.5 4h5A3.5 3.5 0 0 1 14 7.5"/>
+          </svg>
+          AI Response
+        </label>
+        
+        <button type="button" id="copy-btn" onclick="copyResponse()" style="background: none; border: 1px solid #fcd34d; color: #92400e; padding: 4px 12px; border-radius: 6px; font-size: 0.85rem; cursor: pointer; transition: 0.3s;">
+          Copy Text
+        </button>
+      </div>
+      <div class="response-box" id="response-box"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  function clearPrompt() {
+    document.getElementById('user-prompt').value = '';
+    document.getElementById('response-section').style.display = 'none';
+    document.getElementById('response-box').textContent = '';
+  }
+
+  function copyResponse() {
+    const responseText = document.getElementById('response-box').innerText;
+    const copyBtn = document.getElementById('copy-btn');
+    
+    if (!responseText || responseText.includes('AI is thinking...')) return;
+
+    navigator.clipboard.writeText(responseText).then(() => {
+      const originalText = copyBtn.innerText;
+      copyBtn.innerText = 'Copied!';
+      copyBtn.style.background = '#fef3c7';
+      
+      setTimeout(() => {
+        copyBtn.innerText = originalText;
+        copyBtn.style.background = 'none';
+      }, 2000);
+    }).catch(err => {
+      console.error('Failed to copy: ', err);
+    });
+  }
+
+  function generateAI(event) {
+    event.preventDefault();
+    
+    const prompt = document.getElementById('user-prompt').value;
+    const responseBox = document.getElementById('response-box');
+    const responseSection = document.getElementById('response-section');
+    const generateBtn = document.getElementById('generate-btn');
+    
+    responseSection.style.display = 'block';
+    responseBox.innerHTML = `
+      <div class="loading">
+        <div class="loading-spinner"></div>
+        <p>AI is thinking...</p>
+      </div>
+    `;
+    generateBtn.disabled = true;
+    
+    responseSection.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    
+    fetch('/ai-generate', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt: prompt })
+    })
+    .then(response => response.json())
+    .then(data => {
+      responseBox.textContent = data.response;
+      generateBtn.disabled = false;
+    })
+    .catch(error => {
+      responseBox.innerHTML = '<p style="color: #dc2626;">Sorry, there was an error. Please check your backend connection.</p>';
+      generateBtn.disabled = false;
+      console.error('Error:', error);
+    });
+  }
+</script>
+{% endblock %}
