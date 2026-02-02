@@ -13,7 +13,6 @@ app=Flask(__name__)
 
 load_dotenv()
 AI_API=os.getenv("OPEN_ROUTER_API")
-admin_code = os.getenv("ADMIN_KEY")
 app.secret_key = os.urandom(24)
 
 
@@ -336,9 +335,9 @@ def about():
     return render_template("about.html")
 
 
+with app.app_context():
+    db.create_all()
+
 if __name__=="__main__":
     print("Hello World")
-
     app.run(debug=True)
-    with app.app_context():
-        db.create_all()
